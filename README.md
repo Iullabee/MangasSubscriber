@@ -1,1 +1,1 @@
-# MangasSubscriber_DEV_BRANCHE
+# MangasSubscriber release branch
