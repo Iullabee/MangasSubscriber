@@ -2,10 +2,10 @@
 
 	"manifest_version": 2,
 	"name": "MangasSubscriber",
-	"version": "1.0.0_hotfix3",
+	"version": "2.0.0",
 
 	"icons": {
-		"48": "icons/high_resolution_logo.png"
+		"48": "icons/logo.svg"
 	},
 
 	"permissions": [
@@ -19,7 +19,7 @@
 
 	"browser_action": {
 		"browser_style": true,
-		"default_icon": "icons/high_resolution_logo.png",
+		"default_icon": "icons/logo.svg",
 		"default_title": "MangasSub",
 		"default_popup": "popup/popup.html"
 	},
@@ -32,11 +32,13 @@
 		{
 			"run_at": "document_start",
 			"matches": ["*://www.mangahere.cc/manga/*",
-						"*://fanfox.net/manga/*",
-						"*://www.mangatown.com/manga/*",
 						"*://m.mangahere.cc/manga/*",
-						"*://m.fanfox.net/manga/*",
-						"*://m.mangatown.com/manga/*"],
+						"*://fanfox.net/manga/*",
+						"*://fanfox.net//manga/*",
+						"*://m.fanfox.net//manga/*",
+						"*://www.mangatown.com/manga/*",
+						"*://m.mangatown.com/manga/*",
+						"*://www.readmng.com/*"],
 			"js": ["content_tasks/content_script.js"],
 			"css":["content_tasks/content.css"]
 		}

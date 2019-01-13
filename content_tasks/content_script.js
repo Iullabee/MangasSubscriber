@@ -1,7 +1,14 @@
 var websites_list = {"mangahere":"mangahere.cc/manga/",
 					"mangafox":"fanfox.net/manga/",
 					"mangatown":"mangatown.com/manga/",
+					"readmangatoday":"readmng.com/",
 					};
+
+//fix fanfox annoying urls
+(function fanfoxURLFix() {
+	if (this.location.href.indexOf("fanfox.net//") >= 0)
+		this.location.href = this.location.href.replace("fanfox.net//", "fanfox.net/");
+})();
 
 window.addEventListener("load", readMangaChapter);
 function readMangaChapter() {
@@ -15,35 +22,25 @@ function readMangaChapter() {
 		}
 	}
 	
-	//TO-DO check if the chapter is available or if it's a placeholder page
-	switch (website) {
-		case "mangahere":
-			//if using mangaloader script in tampermonkey
-			if (document.getElementsByClassName("ml-images")[0]){
-				is_placeholder = false;
-			} else {
-				//regular placeholder test
-				is_placeholder = document.getElementsByClassName("mangaread_error")[0] || document.getElementsByClassName("error_404")[0] ? true : false;
-			}
-			break;
-		case "mangafox":
-			//if using mangaloader script in tampermonkey
-			if (document.getElementsByClassName("ml-images")[0]){
-				is_placeholder = false;
-			} else {
-				//regular placeholder test
-				is_placeholder = document.getElementsByClassName("reader-main")[0] ? false : true;
-			}
-			break;
-		case "mangatown":
-			//if using mangaloader script in tampermonkey
-			if (document.getElementsByClassName("ml-images")[0]){
-				is_placeholder = false;
-			} else {
-				//regular placeholder test
-				is_placeholder = document.getElementById("viewer") ? false : true;
-			}
-			break;
+	//check if the chapter is available or if it's a placeholder page
+	//if using mangaloader script in tampermonkey
+	if (document.getElementsByClassName("ml-images")[0]){
+		is_placeholder = false;
+	} else {
+		switch (website) {
+			case "mangahere":
+				is_placeholder = document.querySelectorAll("#viewer.read_img")[0] ? false : true;
+				break;
+			case "mangafox":
+				is_placeholder = document.querySelectorAll("img.loaded.reader-main-img")[0] ? false : true;
+				break;
+			case "mangatown":
+				is_placeholder = document.querySelectorAll("#viewer.read_img")[0] ? false : true;
+				break;
+			case "readmangatoday":
+				is_placeholder = document.querySelectorAll("#chapter_img")[0] ? false : true;
+				break;
+		}
 	}
 	
 	if (!is_placeholder) {
@@ -56,6 +53,7 @@ browser.runtime.onMessage.addListener(createNavigation);
 
 function createNavigation(message) {
 	if  (!(document.getElementById("mangassubscriber_nav_bar")) && message.target == "content" && message.navigation){
+		document.body.classList.add("navigation_bar_spacer");
 		var navigation = message.navigation;
 		let nav_bar = document.createElement("div");
 		nav_bar.setAttribute("id", "mangassubscriber_nav_bar");
@@ -99,7 +97,6 @@ function createNavigation(message) {
 		}
 		document.body.appendChild(nav_bar);
 	
-
 		// Create an observer to fire readMangaCHapter when the body is modified (which recreates the nav_bar if it has been destroyed by MangaLoader)
 		var config = { attributes: false, childList: true, subtree: false };
 		var observer = new MutationObserver(readMangaChapter);

@@ -1,10 +1,15 @@
+.navigation_bar_spacer {
+    padding-top: 42px;
+}
+
 #mangassubscriber_nav_bar{
     position: fixed;
     top: 0px;
     left: 0px;
     width: 100%;
-    background: black;
-	z-index: 10;
+    background-color: black;
+    z-index: 1000;
+    border-bottom: 1px solid gray;
 }
 
 .left_nav_button{
