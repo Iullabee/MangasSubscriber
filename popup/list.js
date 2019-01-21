@@ -1,6 +1,8 @@
 
 async function createMangasList() {
     var mangas = await background.getMangasList();
+    //saving scroll position to recall later
+    let scrollmemory = document.getElementById("list_container").scrollTop;
    
     //sorting the mangas alphabetically
     mangas = Object.keys(mangas).sort().reduce((r, k) => (r[k] = mangas[k], r), {});
@@ -195,20 +197,13 @@ async function createMangasList() {
             for (let index in chapters_list.options) {
                 if (chapters_list.options.hasOwnProperty(index) && chapters_list.options[index].classList.contains("unread_chapter")){
                     let manga_url = await background.reconstructChapterURL(my_manga.manga_name, chapters_list.options[index].value); 
-                    await background.readMangaChapter({"target" : "background", "url" : manga_url});
+                    await background.readMangaChapter({"target" : "background", "read" : manga_url});
                     chapters_list[index].classList.remove("unread_chapter");
                     chapters_list[index].classList.add("read_chapter");
                 } else break;
             }
-            let unread_number = my_manga.getElementsByClassName("red_text")[0];
-            if (unread_number) {
-                unread_number.textContent = " (0)";
-                unread_number.classList.remove("red_text");
-                unread_number.classList.add("green_text");
-                chapters_list.classList.remove("unread_chapter");
-                chapters_list.classList.add("read_chapter");
-            }
-            refreshList();
+            
+            createMangasList();
         });
         dom_read_all_button_td.appendChild(dom_read_all_button);
         dom_manga.appendChild(dom_read_all_button_td);
@@ -224,7 +219,7 @@ async function createMangasList() {
         dom_update_button.addEventListener("click", async function(e){	
             let my_manga = e.target.parentElement.parentElement;
             await background.updateMangasList([my_manga.manga_name], true);
-            refreshList();
+            createMangasList();
         });
         dom_update_button_td.appendChild(dom_update_button);
         dom_manga.appendChild(dom_update_button_td);
@@ -249,6 +244,15 @@ async function createMangasList() {
             if (website_name == mangas[name]["website_name"])
                 dom_option.selected = "selected";
                 dom_register_website.appendChild(dom_option);
+        }
+        if (dom_register_website.options.length == 1) {
+            //add add warning if it is not followed on any website
+            let dom_option = document.createElement("option");
+            let dom_option_text = document.createTextNode("warning : not followed on any site");
+            dom_option.appendChild(dom_option_text);
+            dom_option.setAttribute("disabled", "disabled");
+            dom_option.selected = "selected";
+            dom_register_website.appendChild(dom_option);
         }
         dom_register_website_cell.appendChild(dom_register_website);
         dom_manga.appendChild(dom_register_website_cell);
@@ -408,7 +412,7 @@ async function createMangasList() {
             revealModal(title, results, onAgree);
         });
 
-        //option to eassign tags to the manga
+        //option to assign tags to the manga
         let dom_choose_tags_cell = document.createElement("div");
         dom_choose_tags_cell.classList.add("list_cell", "right");
         dom_choose_tags_cell.title = "add or remove tags for this manga";
@@ -431,7 +435,8 @@ async function createMangasList() {
             dom_choose_tags.appendChild(dom_option);
         } else {
             //otherwise, create an option for each tag
-            for (let tag_name in background.mangas_list[name].tags){
+           let ordered_tags = Object.keys(background.mangas_list[name].tags).sort(background.sortAlphaNum).reduce((r, k) => (r[k] = background.mangas_list[name].tags[k], r), {});
+            for (let tag_name in ordered_tags){
                 let dom_option = document.createElement("option");
                 let dom_option_text = document.createTextNode(tag_name);
                 dom_option.appendChild(dom_option_text);
@@ -462,7 +467,8 @@ async function createMangasList() {
                     }
                 }
             }
-            for (let tag_name in every_tag) {
+            let ordered_tags = Object.keys(every_tag).sort(background.sortAlphaNum).reduce((r, k) => (r[k] = every_tag[k], r), {});
+            for (let tag_name in ordered_tags) {
                 if (every_tag.hasOwnProperty(tag_name)) {
                     let tag = document.createElement("div");
                     tag.classList.add("modal_list_line", "website_modal_list_line");
@@ -495,37 +501,39 @@ async function createMangasList() {
             create_tag.addEventListener("change", (event)=>{
                 event.stopPropagation();
                 let tag_name = event.target.value;
-                let already_exist = false;
-                let list = document.getElementById("modal_content");
-                
-                for (let i in list.children) {
-                    if (list.children.hasOwnProperty(i) && list.children[i].tag_name == tag_name){
-                        already_exist = true;
+                if (tag_name != "") {
+                    let already_exist = false;
+                    let list = document.getElementById("modal_content");
+                    
+                    for (let i in list.children) {
+                        if (list.children.hasOwnProperty(i) && list.children[i].tag_name == tag_name){
+                            already_exist = true;
+                        }
                     }
-                }
-                if (!already_exist) {
-                    let tag = document.createElement("div");
-                    tag.classList.add("modal_list_line", "tags_modal_list_line");
-                    tag.tag_name = tag_name;
-                    tag.registered = true;
-                    
-                    tag.addEventListener("click", (e)=>{
-                        e.stopPropagation();
-                        tag.registered = ! tag.registered;
-                        tag.getElementsByTagName("img")[0].src = "../icons/" + (tag.registered?"yes":"no") + ".svg";
-                    });
-
-                    let name = document.createElement("span");
-                    name.classList.add("name_text");
-                    name.innerText = tag_name;
-                    tag.appendChild(name);
-
-                    let registered = document.createElement("img");
-                    registered.classList.add("icons");
-                    registered.src = tag.registered ? "../icons/yes.svg" : "../icons/no.svg";
-                    tag.appendChild(registered);
-                    
-                    list.insertBefore(tag, event.target);
+                    if (!already_exist) {
+                        let tag = document.createElement("div");
+                        tag.classList.add("modal_list_line", "tags_modal_list_line");
+                        tag.tag_name = tag_name;
+                        tag.registered = true;
+                        
+                        tag.addEventListener("click", (e)=>{
+                            e.stopPropagation();
+                            tag.registered = ! tag.registered;
+                            tag.getElementsByTagName("img")[0].src = "../icons/" + (tag.registered?"yes":"no") + ".svg";
+                        });
+    
+                        let name = document.createElement("span");
+                        name.classList.add("name_text");
+                        name.innerText = tag_name;
+                        tag.appendChild(name);
+    
+                        let registered = document.createElement("img");
+                        registered.classList.add("icons");
+                        registered.src = tag.registered ? "../icons/yes.svg" : "../icons/no.svg";
+                        tag.appendChild(registered);
+                        
+                        list.insertBefore(tag, event.target);
+                    }
                 }
             });
             results.push(create_tag);
@@ -565,13 +573,10 @@ async function createMangasList() {
         dom_mangas_list.appendChild(read_mangas[dom_manga]);
     }
 
-    filterList();
-
     //get back to scroll position
-    if (document.getElementById("list_container").scrollmemory) {
-        window.scrollTo(0, document.getElementById("list_container").scrollmemory);
-        document.getElementById("list_container").scrollmemory = 0;
-    }
+    document.getElementById("list_container").scrollTo(0, scrollmemory);
+
+    filterList();
 }
 
 createMangasList();
@@ -654,7 +659,7 @@ initializeReadFilter();
 document.getElementById("tags_filter").addEventListener("change", async (e) => {    
     filterList();
 });
-//initialize read_filter
+//initialize tags_filter
 function initializeTagsFilter() {
     let tags_filter = document.getElementById("tags_filter");
     let tags = {};
@@ -666,8 +671,9 @@ function initializeTagsFilter() {
             }
         }
     }
-    for (let tag in tags) {
-        if (tags.hasOwnProperty(tag)) {
+    let ordered_tags = Object.keys(tags).sort(background.sortAlphaNum).reduce((r, k) => (r[k] = tags[k], r), {});
+    for (let tag in ordered_tags) {
+        if (ordered_tags.hasOwnProperty(tag)) {
             let dom_option = document.createElement("option");
             let dom_option_text = document.createTextNode(tag);
             dom_option.appendChild(dom_option_text);
@@ -706,7 +712,7 @@ document.getElementById("list_update_icon").addEventListener("click", async (e) 
         }
     }
     await background.updateMangasList(update_list, false);
-    refreshList();
+    createMangasList();
 });
 
 
@@ -724,13 +730,13 @@ document.getElementById("list_read_all_icon").addEventListener("click", async (e
             for (let index in chapters_list.options) {
                 if (chapters_list.options.hasOwnProperty(index) && chapters_list.options[index].classList.contains("unread_chapter")){
                     let manga_url = await background.reconstructChapterURL(my_manga.manga_name, chapters_list.options[index].value); 
-                    promised_results.push(background.readMangaChapter({"target" : "background", "url" : manga_url}));
+                    promised_results.push(background.readMangaChapter({"target" : "background", "read" : manga_url}));
                 } else break;
             }
         }
     }
     Promise.all(promised_results).then((result) => {
-        refreshList();
+        createMangasList();
     });
 });
 
@@ -746,7 +752,7 @@ document.getElementById("list_update_toggle_icon").addEventListener("click", asy
             await background.setMangaUpdate(my_manga.manga_name, !my_manga.update_state);
         }
     }
-    refreshList();
+    createMangasList();
 });
 
 
@@ -811,13 +817,7 @@ document.getElementById("list_delete_icon").addEventListener("click", async (e) 
 
 
 
-//refresh list
-function refreshList() {
-    document.getElementById("list_container").scrollmemory = window.scrollY;
-    createMangasList();
-}
-
 //manually refresh the list
 document.getElementById("refresh_list").addEventListener("click", async (e) => {
-    refreshList();
+    createMangasList();
 });

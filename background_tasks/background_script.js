@@ -47,14 +47,14 @@ var websites_list = {
 
 					//extract the chapter list
 					var doc = parser.parseFromString(source, "text/html");
-					let list = doc.querySelectorAll(".detail_list a.color_0077");
+					let list = doc.querySelectorAll(".detail-main-list li a");
 					if (! list[0]) throw new Error(" can't find "+this.getMangaName(manga_url)+" on "+this.name);
 					else {
 						for (let i = 0; i<list.length; i++){
 							if(list[i].href){
-								let chapter_number = await this.getCurrentChapter(list[i].href);
+								let chapter_number = await this.getCurrentChapter(this.url + list[i].href.split("/manga/")[1]); //since mangahere uses relative path for urls in chapters list, we need to get replace the extension ID at the start of the url
 								if (chapter_number)
-									chapters_list[chapter_number] = {"status" : "unknown", "url" : list[i].href.replace("moz-extension", "https")};
+									chapters_list[chapter_number] = {"status" : "unknown", "url" : "https://" + this.url + list[i].href.split("manga/")[1]};
 							}
 						}
 					}
@@ -69,7 +69,7 @@ var websites_list = {
 
 					while (Object.keys(results).length == 0 && index > 0) {
 						//get search page results for manga_name	
-						let source_url = "https://mangahere.cc/search.php?name="+manga_name.replace(/ /g, "+");
+						let source_url = "https://www.mangahere.cc/search?title="+manga_name.replace(/ /g, "+");
 						try {
 							//get search page
 							source = await getSource(source_url);
@@ -78,11 +78,11 @@ var websites_list = {
 						}
 						//extract mangas found
 						let doc = parser.parseFromString(source, "text/html");
-						let list = doc.querySelectorAll("a.manga_info");
+						let list = doc.querySelectorAll("ul.manga-list-4-list li .manga-list-4-item-title a");
 						for (let i=0; i<list.length; i++) {
 							if (mangassubscriber_prefs["search_limit"] > 0 && i >= mangassubscriber_prefs["search_limit"]) break;
 							if (list.hasOwnProperty(i))
-								results[list[i].innerText] = list[i].href.replace("moz-extension", "https");
+								results[cleanMangaName(list[i].title)] = "https://" + this.url + list[i].href.split("manga/")[1];
 						}
 						if (Object.keys(results).length) break; // if results are found, break and return
 						manga_name = manga_name.substring(0, manga_name.lastIndexOf(" "));
@@ -177,7 +177,7 @@ var websites_list = {
 						for (let i in list) {
 							if (mangassubscriber_prefs["search_limit"] > 0 && i >= mangassubscriber_prefs["search_limit"]) break;
 							if (list.hasOwnProperty(i))
-								results[list[i].title] = "https://" + this.url + list[i].href.split("manga/")[1];
+								results[cleanMangaName(list[i].title)] = "https://" + this.url + list[i].href.split("manga/")[1];
 						}
 
 						manga_name = manga_name.substring(0, manga_name.lastIndexOf(" "));
@@ -267,7 +267,7 @@ var websites_list = {
 						for (let i in list) {
 							if (mangassubscriber_prefs["search_limit"] > 0 && i >= mangassubscriber_prefs["search_limit"]) break;
 							if (list.hasOwnProperty(i))
-								results[list[i].title] = "https://" + this.url + list[i].href.split("manga/")[1];
+								results[cleanMangaName(list[i].title)] = "https://" + this.url + list[i].href.split("manga/")[1];
 						}
 						if (Object.keys(results).length) break; // if results are found, break and return
 						manga_name = manga_name.substring(0, manga_name.lastIndexOf(" "));
@@ -357,7 +357,7 @@ var websites_list = {
 						for (let i in list) {
 							if (mangassubscriber_prefs["search_limit"] > 0 && i >= mangassubscriber_prefs["search_limit"]) break;
 							if (list.hasOwnProperty(i))
-								results[list[i].title] = list[i].href.replace("moz-extension", "http");
+								results[cleanMangaName(list[i].title)] = list[i].href.replace("moz-extension", "http");
 						}
 						
 						manga_name = manga_name.substring(0, manga_name.lastIndexOf(" "));
@@ -369,9 +369,8 @@ var websites_list = {
 };
 
 function cleanMangaName (name) {
-	return name.replace(/[\W_]+/g , " ");
+	return name.replace(/[\W_]+/g , " ").toLowerCase();
 }
-
 function sortAlphaNum(a, b) {
     var reA = /[^a-zA-Z]/g;
     var reN = /[^0-9.]/g;
@@ -394,6 +393,17 @@ function sortNum (a, b) {
 
 function customSort(a, b) {
 	return mangassubscriber_prefs["unified_chapter_numbers"] ? sortNum(a, b) : sortAlphaNum(a, b);
+}
+
+function cloneObject(obj) {
+    var clone = {};
+    for(var i in obj) {
+        if(obj[i] != null &&  typeof(obj[i])=="object")
+            clone[i] = cloneObject(obj[i]);
+        else
+            clone[i] = obj[i];
+    }
+    return clone;
 }
 
 async function getSource(source_url){
@@ -507,8 +517,8 @@ async function updateMangasList(mangas_selection, ignore_no_update){
 browser.runtime.onMessage.addListener(readMangaChapter);
 
 async function readMangaChapter(message, sender) {
-	if  (message.target == "background" && message.url){
-		var url = message.url;
+	if  (message.target == "background" && message.read){
+		var url = message.read;
 		var manga_name = getMangaName(url);
 		var current_chapter = await getCurrentChapter(url);
 
@@ -541,6 +551,36 @@ async function readMangaChapter(message, sender) {
 						if (await getNavigationBar())
 							browser.tabs.sendMessage(sender.tab.id, {"target":"content","navigation": {"first_chapter":first_chapter,"previous_chapter":previous_chapter,"next_chapter":next_chapter,"last_chapter":last_chapter}});
 					}
+				}
+			}
+		}
+		//update badge
+		setBadgeNumber();
+	}
+}
+
+
+
+
+//listen to content script, and set manga chapter as "read"
+browser.runtime.onMessage.addListener(unreadMangaChapter);
+
+async function unreadMangaChapter(message, sender) {
+	if  (message.target == "background" && message.unread){
+		var url = message.unread;
+		var manga_name = getMangaName(url);
+		var current_chapter = await getCurrentChapter(url);
+
+		let mangas_list = await getMangasList();
+
+		if (mangas_list[manga_name]) {
+			if (current_chapter) {
+				if (mangas_list[manga_name].chapters_list[current_chapter]) {
+					mangas_list[manga_name].chapters_list[current_chapter]["status"] = "unread";
+					browser.storage.local.set({"mangas_list" : mangas_list});
+				} else {
+					mangas_list[manga_name].chapters_list[current_chapter] = {"status" : "unread", "url" : url};
+					browser.storage.local.set({"mangas_list" : mangas_list});
 				}
 			}
 		}
@@ -605,7 +645,9 @@ async function exportMangasListOnline(){
 //import mangas list from json
 async function importMangasList(parsed_json){
 	var back_up = parsed_json["MangasSubscriberBackUp"];
-	if (back_up && back_up["MangasSubscriberPrefs"] && back_up["MangasSubscriberPrefs"]["DB_version"] == "2.0.0"){
+	if (back_up && back_up["MangasSubscriberPrefs"] && back_up["MangasSubscriberPrefs"]["DB_version"] == "2.0.0"){await getMangasList();
+		mangas_list = cloneObject(back_up["mangas_list"]);
+		mangassubscriber_prefs = cloneObject(back_up["MangasSubscriberPrefs"]);
 		await browser.storage.local.clear();
 		await browser.storage.local.set(back_up);
 		//update badge
@@ -625,7 +667,7 @@ async function registerWebsites(manga_name, websites){
 	}
 
 	let mangas_list = await getMangasList();
-	mangas_list[manga_name]["registered_websites"] = Object.assign({}, websites); //websites is a reference to an object created in the popup, it becomes DeadObject when the popup is destroyed, Object.assign creates a copy to avoid that.
+	mangas_list[manga_name]["registered_websites"] = cloneObject(websites); //websites is a reference to an object created in the popup, it becomes DeadObject when the popup is destroyed
 	browser.storage.local.set({"mangas_list" : mangas_list});
 	return;
 }
@@ -634,7 +676,7 @@ async function registerWebsites(manga_name, websites){
 async function registerTags(manga_name, tags){
 	let mangas_list = await getMangasList();
 
-	mangas_list[manga_name]["tags"] = Object.assign({}, tags); //tags is a reference to an object created in the popup, it becomes DeadObject when the popup is destroyed, Object.assign creates a copy to avoid that.
+	mangas_list[manga_name]["tags"] = cloneObject(tags); //tags is a reference to an object created in the popup, it becomes DeadObject when the popup is destroyed
 	browser.storage.local.set({"mangas_list" : mangas_list});
 	return;
 }
