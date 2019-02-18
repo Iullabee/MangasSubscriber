@@ -2,7 +2,7 @@
 
 	"manifest_version": 2,
 	"name": "MangasSubscriber",
-	"version": "2.0.3_hotfix2",
+	"version": "2.0.4",
 
 	"icons": {
 		"48": "icons/logo.svg"
@@ -14,14 +14,14 @@
 		"unlimitedStorage",
 		"downloads",
 		"clipboardWrite",
-		"*://*.mangahere.cc/*",
+		"*://mangahere.cc/*",
 		"*://fanfox.net/*",
-		"*://*.fanfox.net/*",
 		"*://*.mangatown.com/*",
 		"*://*.readmng.com/*",
 		"*://*.webtoons.com/*",
 		"*://mangakakalot.com/*",
 		"*://manganelo.com/*",
+		"*://mangarock.com/*",
 		"*://pastebin.com/*"
 	],
 
@@ -51,7 +51,8 @@
 						"*://www.webtoons.com/*/*/*",
 						"*://m.webtoons.com/*/*/*",
 						"*://mangakakalot.com/*/*/*",
-						"*://manganelo.com/*/*/*"],
+						"*://manganelo.com/*/*/*",
+						"*://mangarock.com/*/*/*"],
 			"js": ["content_tasks/content_script.js"],
 			"css":["content_tasks/content.css"]
 		}
