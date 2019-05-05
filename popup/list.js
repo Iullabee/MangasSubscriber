@@ -157,15 +157,22 @@ async function createMangasList() {
 		});
 		dom_delete_button_td.appendChild(dom_delete_button);
 		dom_manga.appendChild(dom_delete_button_td);
-
-		//a spacer to avoid missclicks
-		let dom_spacer_td = document.createElement("div");
-		dom_spacer_td.classList.add("list_cell", "right");
-		let dom_spacer = document.createElement("img");
-		dom_spacer.classList.add("icons");
-		dom_spacer.src = "../icons/icon_spacer.svg";
-		dom_spacer_td.appendChild(dom_spacer);
-		dom_manga.appendChild(dom_spacer_td);
+		
+		//button to update now
+		let dom_update_button_td = document.createElement("div");
+		dom_update_button_td.classList.add("list_cell", "right");
+		dom_update_button_td.title = "update (only) this manga now.\nignores the 'no update' tag!";
+		let dom_update_button = document.createElement("img");
+		dom_update_button.update_state = manga["update"];
+		dom_update_button.classList.add("icons");
+		dom_update_button.src = "../icons/update.svg";
+		dom_update_button.addEventListener("click", async function(e){	
+			let my_manga = e.target.parentElement.parentElement;
+			await background.updateMangasList([my_manga.manga_name], true);
+			createMangasList();
+		});
+		dom_update_button_td.appendChild(dom_update_button);
+		dom_manga.appendChild(dom_update_button_td);
 
 		//and a button to toggle updating of a manga
 		let dom_update_toggle_button_td = document.createElement("div");
@@ -207,22 +214,6 @@ async function createMangasList() {
 		});
 		dom_read_all_button_td.appendChild(dom_read_all_button);
 		dom_manga.appendChild(dom_read_all_button_td);
-		
-		//button to update now
-		let dom_update_button_td = document.createElement("div");
-		dom_update_button_td.classList.add("list_cell", "right");
-		dom_update_button_td.title = "update (only) this manga now.&#10;ignores the 'no update' tag!";
-		let dom_update_button = document.createElement("img");
-		dom_update_button.update_state = manga["update"];
-		dom_update_button.classList.add("icons");
-		dom_update_button.src = "../icons/update.svg";
-		dom_update_button.addEventListener("click", async function(e){	
-			let my_manga = e.target.parentElement.parentElement;
-			await background.updateMangasList([my_manga.manga_name], true);
-			createMangasList();
-		});
-		dom_update_button_td.appendChild(dom_update_button);
-		dom_manga.appendChild(dom_update_button_td);
 
 		//option to register websites on which to follow this manga
 		let dom_register_website_cell = document.createElement("div");
@@ -585,7 +576,7 @@ createMangasList();
 //filter the list
 function filterList() {
 	var list = document.getElementById("list").children;
-	let filter_field = document.getElementById("filter_list").value;
+	let filter_field = document.getElementById("filter_list").value.toLowerCase();
 	let filter_unread = document.getElementById("unread_filter").filter_out;
 	let filter_already_read = document.getElementById("already_read_filter").filter_out;
 	let filter_tags = document.getElementById("tags_filter").value;
@@ -602,7 +593,8 @@ function filterList() {
 				: (list[manga].classList.add("hidden"), list[manga].classList.remove("visible"));
 		}
 	}
-	document.getElementById("filter_list").focus();
+	//focus the filter field if not on android (to avoid wasting half the screen on the virtual keyboard)
+	browser.runtime.platformOS != "android" ? document.getElementById("filter_list").focus() : false;
 }
 //filter the list when user types something
 document.getElementById("filter_list").addEventListener("keyup", async (e) => {

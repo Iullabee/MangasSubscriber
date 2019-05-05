@@ -287,27 +287,29 @@ var websites_list = {
 				getCurrentChapter: async function (url){
 					let mangassubscriber_prefs = await getMangasSubscriberPrefs();
 					//get rid of website and manga name,
-					var url_tail = url.split(this.url)[1]
-					url_tail = url_tail.substring(url_tail.indexOf("/")+1);
+					var url_tail = url.split(this.url)[1];
+					if (url_tail.includes("/")) { //if there is a "/", there is probably a chapter number, if not url is that of manga root page
+						url_tail = url_tail.substring(url_tail.indexOf("/")+1); 
 					
-					if (mangassubscriber_prefs["unified_chapter_numbers"]) {
-						url_tail = url_tail.split("/")[0];
-						while (url_tail.charAt(0) == "0" && url_tail.split(".")[0].length > 1) {
-							url_tail = url_tail.slice(1);
+						if (mangassubscriber_prefs["unified_chapter_numbers"]) {
+							url_tail = url_tail.split("/")[0];
+							while (url_tail.charAt(0) == "0" && url_tail.split(".")[0].length > 1) {
+								url_tail = url_tail.slice(1);
+							}
+						} else {
+							//if there is a page number
+							if (url_tail.split("/")[1] || url_tail.charAt(url_tail.length -1) == "/"){
+								//get rid of page number
+								url_tail = url_tail.substring(0, url_tail.lastIndexOf("/"));
+							}
+							//buffering chapter number with zeros and a c
+							while (url_tail.split(".")[0].length < 3) {
+								url_tail = "0" + url_tail;
+							}
+							url_tail = "c" + url_tail;
 						}
-					} else {
-						//if there is a page number
-						if (url_tail.split("/")[1] || url_tail.charAt(url_tail.length -1) == "/"){
-							//get rid of page number
-							url_tail = url_tail.substring(0, url_tail.lastIndexOf("/"));
-						}
-						//buffering chapter number with zeros and a c
-						while (url_tail.split(".")[0].length < 3) {
-							url_tail = "0" + url_tail;
-						}
-						url_tail = "c" + url_tail;
-					}
-					return url_tail;
+						return url_tail;
+					} else return -1; //return -1 if url is manga root page
 				},
 				getAllChapters: async function (manga_url){
 					var chapters_list = {};
@@ -534,10 +536,10 @@ var websites_list = {
 						
 						//extract mangas found
 						let doc = parser.parseFromString(source, "text/html");
-						let list = doc.querySelectorAll("div.daily-update-item span a");
+						let list = doc.querySelectorAll("div.story_item h3.story_name a");
 						for (let i=0; i<list.length; i++) {
 							if (mangassubscriber_prefs["search_limit"] > 0 && i >= mangassubscriber_prefs["search_limit"]) break;
-							results[cleanMangaName(list[i].innerText)] = "https://" + this.url + "manga/" + list[i].href.split("manga/")[1];
+							results[cleanMangaName(list[i].innerText)] = this.getMangaRootURL(list[i].href);
 						}
 						if (Object.keys(results).length) break; // if results are found, break and return
 						manga_name = manga_name.substring(0, manga_name.lastIndexOf(" "));
@@ -620,10 +622,10 @@ var websites_list = {
 						
 						//extract mangas found
 						let doc = parser.parseFromString(source, "text/html");
-						let list = doc.querySelectorAll("div.daily-update-item span a");
+						let list = doc.querySelectorAll("div.story_item h3.story_name a");
 						for (let i=0; i<list.length; i++) {
 							if (mangassubscriber_prefs["search_limit"] > 0 && i >= mangassubscriber_prefs["search_limit"]) break;
-							results[cleanMangaName(list[i].innerText)] = "https://" + this.url + "manga/" + list[i].href.split("manga/")[1];
+							results[cleanMangaName(list[i].innerText)] = this.getMangaRootURL(list[i].href);
 						}
 						if (Object.keys(results).length) break; // if results are found, break and return
 						manga_name = manga_name.substring(0, manga_name.lastIndexOf(" "));
@@ -705,7 +707,7 @@ var websites_list = {
 					while (Object.keys(results).length == 0 && index > 0) {
 						let tab = await browser.tabs.create({url: "https://mangarock.com/search?q="+manga_name});
 						let arrayed = [];
-						for (i=0; i<10; i++) {
+						for (i=0; i<100; i++) {
 							arrayed = await browser.tabs.executeScript({
 								code:'if (!list) {var list = [];} else {list = [];} list = document.querySelectorAll("a._2dU-m.vlQGQ"); if (!results) {var results = {};} else {results = {};}'+
 								'for (let i=0; i<list.length; i++) {results[list[i].innerText] = "https://mangarock.com/manga/" + list[i].href.split("manga/")[1];}'+
@@ -715,7 +717,7 @@ var websites_list = {
 							if (arrayed[0] == undefined || arrayed[0].length < 3) {
 								await (async function sleep(ms = 0) {
 									return new Promise(r => setTimeout(r, ms));
-								})(1000);
+								})(100);
 							} else break;
 						}
 						
@@ -727,15 +729,14 @@ var websites_list = {
 						}
 						
 						browser.tabs.remove(tab.id);
-						if (Object.keys(results).length) break; // if results are found, break and return
+						if (Object.keys(untrimmed_results).length) break; // if results are found, break and return
 						manga_name = manga_name.substring(0, manga_name.lastIndexOf(" "));
 						index--;
 					}
 
 					for (i=0; i<Object.keys(untrimmed_results).length; i++) {
 						if (mangassubscriber_prefs["search_limit"] > 0 && i >= mangassubscriber_prefs["search_limit"]) break;
-							results[Object.keys(untrimmed_results)[i]] = untrimmed_results[Object.keys(untrimmed_results)[i]];
-						
+						results[Object.keys(untrimmed_results)[i]] = untrimmed_results[Object.keys(untrimmed_results)[i]];
 					}
 					
 					return results;
@@ -848,13 +849,16 @@ async function followManga(url){
 
 //update the manga list
 async function updateMangasList(mangas_selection, ignore_no_update){
-	if (browser.browserAction.setBadgeText)
-		browser.browserAction.setBadgeText({"text" : "UPD"});
+	if (browser.browserAction.setBadgeText)	browser.browserAction.setBadgeText({"text" : "UPD"});
 	let updated_chapters_list = {};
 	let check_all_sites = await getCheckAllSites();
 	let to_update_list = {};
 	let update_promises = [];
 	let mangas_list = await getMangasList();
+
+	//add cookies to bypass age verification hiding chapters lists
+	await browser.cookies.set({url:"https://fanfox.net", name:"isAdult", value:"1"});
+	await browser.cookies.set({url:"https://www.mangahere.cc", name:"isAdult", value:"1"});
 
 	if (mangas_selection) {
 		for (var i in mangas_selection) {
@@ -947,7 +951,7 @@ async function readMangaChapter(message, sender) {
 						}
 
 						if (await getNavigationBar())
-							browser.tabs.sendMessage(sender.tab.id, {"target":"content","navigation": {"first_chapter": first_chapter, "previous_chapter": previous_chapter, "next_chapter": next_chapter, "last_chapter": last_chapter, "unread_chapter": unread_chapter}});
+							browser.tabs.sendMessage(sender.tab.id, {"target":"content","navigation": {"current_chapter":current_chapter, "first_chapter": first_chapter, "previous_chapter": previous_chapter, "next_chapter": next_chapter, "last_chapter": last_chapter, "unread_chapter": unread_chapter}});
 					}
 				}
 			}
