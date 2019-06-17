@@ -1,1 +1,1 @@
-# MangasSubscriber_DEV_BRANCH
+# MangasSubscriber
