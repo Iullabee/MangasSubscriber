@@ -661,7 +661,7 @@ var websites_list = {
 };
 
 function cleanMangaName (name) {
-	return name.replace(/[\W_]+/g , " ").toLowerCase();
+	return name.replace(/[\W_]+/g , " ").toLowerCase().trim();
 }
 function sortAlphaNum(a, b) {
 	var reA = /[^a-zA-Z]/g;
@@ -806,7 +806,7 @@ async function updateMangasList(mangas_selection, ignore_no_update){
 																		browser.storage.local.set({"mangas_list" : mangas_list});
 																	},
 																	function(error){
-																		browser.runtime.sendMessage({"target":"popup" , "log":{"manga":manga , "from":website_name , "status":"errors" , "details":"couldn't get source : "+error}}); //warning the popup
+																		browser.runtime.sendMessage({"target":"popup" , "log":{"manga":manga , "from":website_name , "status":"errors" , "details":"couldn't get source : "+ error +"\n"+ error.stack}}); //warning the popup
 																	}
 					);
 					update_promises.push(updated_chapters_list[manga][website_name]);
@@ -1278,15 +1278,12 @@ async function install(){
 	if (!prefs || Object.keys(prefs).length < 8) {prefs = {"DB_version":"2.0.2", "unified_chapter_numbers":true, "check_all_sites":false, "navigation_bar":true, "auto_update":0, "last_update":0, "search_limit":5, "patchnotes": "0.0.0"}; mangassubscriber_prefs = prefs;}
 	if (!list || Object.keys(list).length == 0) {list = {}; mangas_list = list;}
 
-	//fix for mangahere url change
+	//applying the change in cleanMangaName() to existing manga names
 	{
 		for (let manga in mangas_list) {
-			if (mangas_list.hasOwnProperty(manga)) {
-				for (let website in mangas_list[manga]["registered_websites"]) {
-					if (mangas_list[manga]["registered_websites"].hasOwnProperty(website) && !websites_list[website]["unsupported"]) {
-						mangas_list[manga]["registered_websites"][website] = websites_list[website].getMangaRootURL(mangas_list[manga]["registered_websites"][website]);
-					}
-				}
+			if (mangas_list.hasOwnProperty(manga) && manga != cleanMangaName(manga)) {
+				mangas_list[cleanMangaName(manga)] = mangas_list[manga];
+				delete mangas_list[manga];
 			}
 		}
 	}
