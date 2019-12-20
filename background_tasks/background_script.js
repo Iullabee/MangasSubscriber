@@ -551,17 +551,13 @@ var websites_list = {
 
 					//extract the chapter list
 					var doc = parser.parseFromString(source, "text/html");
-					let list = doc.querySelectorAll("div.chapter-list div.row");
+					let list = doc.querySelectorAll("ul.row-content-chapter");
 					if (! list[0]) throw new Error(" can't find "+ await this.getMangaName(manga_url)+" on "+this.name);
 					else {
 						for (let i=0; i<list.length; i++){
 							if (list.hasOwnProperty(i)){
-								let chapter = list[i].querySelector("span a");
-								let date = "";
-								if (list[i].querySelector("span[title]").innerText.includes("-")) {
-									date = list[i].querySelector("span[title]").innerText.split("-");
-									date = date[1]+"/"+date[0]+"/20"+date[2];
-								} else date = list[i].querySelector("span[title]").innerText;
+								let chapter = list[i].querySelector("a");
+								let date = list[i].querySelector("span[title]").innerText;
 								let update = new Date(date) != "Invalid Date" ? new Date(date).getTime()
 									: date == "1 day ago " ? new Date().getTime() - (24 * 3600 * 1000)
 									: date == "2 day ago " ? new Date().getTime() - (48 * 3600 * 1000)
@@ -596,7 +592,7 @@ var websites_list = {
 						
 						//extract mangas found
 						let doc = parser.parseFromString(source, "text/html");
-						let list = doc.querySelectorAll("div.story_item h3.story_name a");
+						let list = doc.querySelectorAll("a.item-title");
 						for (let i=0; i<list.length; i++) {
 							if (mangassubscriber_prefs["search_limit"] > 0 && i >= mangassubscriber_prefs["search_limit"]) break;
 							results[cleanMangaName(list[i].innerText)] = this.getMangaRootURL(list[i].href);
@@ -839,6 +835,7 @@ async function updateMangasList(mangas_selection, ignore_no_update){
 	//add cookies to bypass age verification hiding chapters lists
 	await browser.cookies.set({url:"https://fanfox.net", name:"isAdult", value:"1"});
 	await browser.cookies.set({url:"https://www.mangahere.cc", name:"isAdult", value:"1"});
+	await browser.cookies.set({url:"https://www.webtoons.com", name:"ageGatePass", value:"true"});
 
 	if (mangas_selection) {
 		for (var i in mangas_selection) {
