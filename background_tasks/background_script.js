@@ -769,7 +769,9 @@ function sortVersions(a, b) {
 	let compare = null;
 
 	for (i=0; i<length; i++) {
-		compare = tabA[i] ? tabB[i] ? tabA[i] > tabB[i] ? 1 : tabA[i] == tabB[i] ? 0 : -1 : 1 : -1;
+		let Ai = tabA[i] ? parseInt(tabA[i]) : 0;
+		let Bi = tabB[i] ? parseInt(tabB[i]) : 0;
+		compare = Ai > Bi ? 1 : Ai == Bi ? 0 : -1;
 		if (compare != 0) break;
 	}
 	return compare;
@@ -819,6 +821,7 @@ async function followManga(url){
 	for (let chapter_number in chapters_list){
 		chapters_list[chapter_number]["status"] = customSort(chapter_number, current_chapter) <= 0 ? "read" : "unread";
 		updates.push(chapters_list[chapter_number]["update"]);
+		delete chapters_list[chapter_number]["update"];
 	}
 	let registered_websites = {};
 	registered_websites[website.name] = manga_root_url;
@@ -1381,7 +1384,13 @@ async function install(){
 
 	//add here existing lists modification to comply with new version when needed
 	if (update_list) {
-		
+		for (let manga in mangas_list){
+			if (typeof mangas_list[manga]["last_updated"] == "string") 
+				mangas_list[manga]["last_updated"] = 0;
+			for (let chapter_number in mangas_list[manga]["chapters_list"]) {
+				delete mangas_list[manga]["chapters_list"][chapter_number]["update"];
+			}
+		}
 	}
 
 	to_log = {"MangasSubscriberPrefs": mangassubscriber_prefs, "mangas_list": mangas_list};
