@@ -2,7 +2,7 @@
 
 	"manifest_version": 2,
 	"name": "MangasSubscriber",
-	"version": "2.1.11",
+	"version": "2.2.1",
 
 	"icons": {
 		"48": "icons/logo.svg"
@@ -23,6 +23,7 @@
 		"*://mangakakalot.com/*",
 		"*://manganelo.com/*",
 		"*://isekaiscan.com/*",
+		"*://mangadex.org/*",
 		"*://pastebin.com/*"
 	],
 
@@ -52,7 +53,8 @@
 						"*://m.webtoons.com/*/*/*",
 						"*://mangakakalot.com/*/*/*",
 						"*://manganelo.com/*/*/*",
-						"*://isekaiscan.com/*"],
+						"*://isekaiscan.com/*",
+						"*://mangadex.org/*"],
 			"js": ["content_tasks/content_script.js"],
 			"css":["content_tasks/content.css"]
 		}
