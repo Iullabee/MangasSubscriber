@@ -1643,6 +1643,7 @@ async function install(){
 				if (url) {
 					mangas_list[manga]["registered_websites"]["readmanganato"] = websites_list["readmanganato"].getMangaRootURL(url); 
 					mangas_list[manga]["website_name"] == "manganelo" ? mangas_list[manga]["website_name"] = "readmanganato" : null;
+					delete mangas_list[manga]["registered_websites"]["manganelo"];
 				}
 			}
 		}
