@@ -2,7 +2,7 @@
 
 	"manifest_version": 2,
 	"name": "MangasSubscriber",
-	"version": "2.4.1",
+	"version": "2.4.2",
 
 	"icons": {
 		"48": "icons/logo.svg"
@@ -21,12 +21,12 @@
 		"*://mangahere.cc/*",
 		"*://*.mangahere.cc/*",
 		"*://manganato.com/*",
-		"*://readmanganato.com/*",
-		"*://chapmanganato.com/*",
-		"*://isekaiscan.com/*",
+		"*://chapmanganato.to/*",
+		"*://www.isekaiscan.top/*",
 		"*://mangadex.org/*",
 		"*://api.mangadex.org/*",
 		"*://*.mangago.me/*",
+		"*://manhuaplus.org/*",
 		"*://api.paste.ee/*"
 	],
 
@@ -55,11 +55,11 @@
 						"*://www.webtoons.com/*/*/*",
 						"*://m.webtoons.com/*/*/*",
 						"*://manganato.com/*",
-						"*://readmanganato.com/*/*",
-						"*://chapmanganato.com/*/*",
-						"*://isekaiscan.com/*",
+						"*://manganato.com/*/*",
+						"*://www.isekaiscan.top/*",
 						"*://mangadex.org/*",
-						"*://www.mangago.me/*"],
+						"*://www.mangago.me/*",
+						"*://manhuaplus.org/*"],
 			"js": ["content_tasks/content_script.js"],
 			"css":["content_tasks/content.css"]
 		}
@@ -77,7 +77,12 @@
 	
 	"browser_specific_settings": {
 		"gecko": {
-			"id": "MangasSubscriber@Lullabee"
+			"id": "MangasSubscriber@Lullabee",
+			"strict_min_version": "120.0"
+		},
+		"gecko_android": {
+			"id": "MangasSubscriber@Lullabee",
+			"strict_min_version": "120.0"
 		}
 	}
 
