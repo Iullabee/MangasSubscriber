@@ -2,7 +2,7 @@
 
 	"manifest_version": 2,
 	"name": "MangasSubscriber",
-	"version": "2.4.2",
+	"version": "2.4.3",
 
 	"icons": {
 		"48": "icons/logo.svg"
@@ -55,7 +55,7 @@
 						"*://www.webtoons.com/*/*/*",
 						"*://m.webtoons.com/*/*/*",
 						"*://manganato.com/*",
-						"*://manganato.com/*/*",
+						"*://chapmanganato.to/*",
 						"*://www.isekaiscan.top/*",
 						"*://mangadex.org/*",
 						"*://www.mangago.me/*",
