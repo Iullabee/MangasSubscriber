@@ -4,17 +4,13 @@ var websites_list = {"mangahere":"mangahere.cc/manga/",
 					"webtoons":"webtoons.com/",
 					"manganato":"manganato.com/",
 					"alt_manganato":"chapmanganato.to/",
+					"mangakakalot":"www.mangakakalot.gg/",
+					"natomanga":"www.natomanga.com/",
 					"isekaiscan":"www.isekaiscan.top/",
 					"mangadex":"mangadex.org/",
 					"mangago":"mangago.me/",
 					"manhuaplus":"manhuaplus.org/"
 					};
-
-//fix fanfox annoying urls
-(function fanfoxURLFix() {
-	if (this.location.href.indexOf("fanfox.net//") >= 0)
-		this.location.href = this.location.href.replace("fanfox.net//", "fanfox.net/");
-})();
 
 
 window.addEventListener("load", readMangaChapter);
@@ -50,6 +46,12 @@ function readMangaChapter() {
 				is_placeholder = document.querySelector(".container-chapter-reader img") ? false : true; //no mobile site
 				break;
 			case "alt_manganato":
+				is_placeholder = document.querySelector(".container-chapter-reader img") ? false : true; //no mobile site
+				break;
+			case "mangakakalot":
+				is_placeholder = document.querySelector(".container-chapter-reader img") ? false : true; //no mobile site
+				break;
+			case "natomanga":
 				is_placeholder = document.querySelector(".container-chapter-reader img") ? false : true; //no mobile site
 				break;
 			case "isekaiscan":
