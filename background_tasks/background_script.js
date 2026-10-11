@@ -346,8 +346,8 @@ var websites_list = {
 					}
 
 					var doc = parser.parseFromString(source, "text/html");
-					let list = doc.querySelectorAll(".detail_lst ul li a");
-					list[0] ? false : list = doc.querySelectorAll("ul#_episodeList li a"); //if no chapters found, we might have been redirected to mobile website (different layout), check if we find something using that layout
+					let list = doc.querySelectorAll("#_listUl li a");
+					list[0] ? false : list = doc.querySelectorAll("ul.detail_list_wrap li a"); //if no chapters found, we might have been redirected to mobile website (different layout), check if we find something using that layout
 					if (! list[0]) throw new Error(" can't find "+manga_name+" on "+this.name);
 					else {
 						for (let i=0; i<list.length; i++){
@@ -364,7 +364,7 @@ var websites_list = {
 					if (!already_updated_this) {
 						let paginate = doc.getElementsByClassName("paginate")[0];
 						for (let i=0; i<paginate.children.length; i++) {
-							if (paginate.children[i].href.substr(-1) == "#" && paginate.children[i+1]) {
+							if (paginate.children[i].href && paginate.children[i].href.substr(-1) == "#" && paginate.children[i+1] && paginate.children[i+1].href) {
 								let chapters = await this.getAllChapters("https://" + this.url + paginate.children[i+1].href.split("moz-extension://")[1].substring(paginate.children[i+1].href.split("moz-extension://")[1].indexOf("/") + 1));
 								for (let number in chapters){
 									if(chapters.hasOwnProperty(number)){
@@ -429,7 +429,7 @@ var websites_list = {
 				},
 				getAllChapters: async function (manga_url){
 					var chapters_list = {};
-					var source = "truc";
+					/*var source = "truc";
 					var parser = new DOMParser();
 
 					try {
@@ -438,16 +438,38 @@ var websites_list = {
 					} catch (error) {
 						throw error;
 					}
+					
+					//if blocked by CloudFlare, open manga_root in a tab to bypass protection
+					if (source.includes("challenge-error-text")) { //add check if option to open in tabs to bypass cloudflare is selected
+						let bypassed = false;
+						//open in new tab and save reference to close tab afterward
+						let manga_tab = await browser.tabs.create({"active":false, "url": manga_url});
+						let max_timer_seconds = 10;
+						let timer_seconds = 0;
+						while (!bypassed && timer_seconds < max_timer_seconds) {
+							//use tabs.executeScript to get source code chapter list
+							//need to add scrolling on the chapters list here to make it fetch the earlier chapters before getting the outerHTML
+							source = await browser.tabs.executeScript(manga_tab.id, {code:"document.documentElement.outerHTML"})
+							bypassed = source.includes("challenge-error-text") ? false : true;
+							//waiting period to avoid spamming
+							await timer(1000);
+							timer_seconds++;
+						}
+						//close the tab
+						browser.tabs.remove(manga_tab.id);
+					}
 
 					//extract the chapter list
 					var doc = parser.parseFromString(source, "text/html");
 					let list = doc.querySelectorAll("div.chapter-list div.row");
-					if (! list[0]) throw new Error(" can't find "+ await this.getMangaName(manga_url)+" on "+this.name);
-					else {
+					if (! list[0]) {
+						let error_message = doc.querySelector("#challenge-error-text") ? "blocked by CloudFlare" : " can't find "+ await this.getMangaName(manga_url)+" on "+this.name;
+						throw new Error(error_message);
+					} else {
 						for (let i=0; i<list.length; i++){
 							if (list.hasOwnProperty(i)){
 								let chapter = list[i].querySelector("a");
-								let date = list[i].querySelector("span[title]").title;
+								let date = list[i].querySelectorAll("span")[3];
 								let update = new Date(date) != "Invalid Date" ? new Date(date).getTime()
 									: date == "1 day ago" ? new Date().getTime() - (24 * 3600 * 1000)
 									: date == "2 day ago" ? new Date().getTime() - (48 * 3600 * 1000)
@@ -460,7 +482,23 @@ var websites_list = {
 								}
 							}
 						}
+					}*/
+
+					let source = await getSource("https://www.mangakakalot.gg/api/manga/"+manga_url.split("/manga/")[1]+"chapters?limit=5000&offset=0");
+					let list =  JSON.parse(source)["data"]["chapters"];
+					if (! list[0]) {
+						let error_message = " can't find "+ await this.getMangaName(manga_url)+" on "+this.name;
+						throw new Error(error_message);
+					} else {
+						for (chapter in list){
+							let chapter_href = manga_url + list[chapter]["chapter_slug"];
+							let chapter_number = list[chapter]["chapter_num"].toString();
+							let date = list[chapter]["updated_at"];
+							let update = new Date(date) != "Invalid Date" ? new Date(date).getTime() : new Date().getTime();
+							chapters_list[chapter_number] = {"status" : "unknown", "url" : chapter_href, "update" : update};
+						}
 					}
+
 					return chapters_list;
 				},
 				searchFor: async function (manga_name){
@@ -511,7 +549,7 @@ var websites_list = {
 				},
 				getAllChapters: async function (manga_url){
 					var chapters_list = {};
-					var source = "truc";
+					/*var source = "truc";
 					var parser = new DOMParser();
 
 					try {
@@ -520,16 +558,38 @@ var websites_list = {
 					} catch (error) {
 						throw error;
 					}
+					
+					//if blocked by CloudFlare, open manga_root in a tab to bypass protection
+					if (source.includes("challenge-error-text")) { //add check if option to open in tabs to bypass cloudflare is selected
+						let bypassed = false;
+						//open in new tab and save reference to close tab afterward
+						let manga_tab = await browser.tabs.create({"active":false, "url": manga_url});
+						let max_timer_seconds = 10;
+						let timer_seconds = 0;
+						while (!bypassed && timer_seconds < max_timer_seconds) {
+							//use tabs.executeScript to get source code chapter list
+							//need to add scrolling on the chapters list here to make it fetch the earlier chapters before getting the outerHTML
+							source = await browser.tabs.executeScript(manga_tab.id, {code:"document.documentElement.outerHTML"})
+							bypassed = source.includes("challenge-error-text") ? false : true;
+							//waiting period to avoid spamming
+							await timer(1000);
+							timer_seconds++;
+						}
+						//close the tab
+						browser.tabs.remove(manga_tab.id);
+					}
 
 					//extract the chapter list
 					var doc = parser.parseFromString(source, "text/html");
 					let list = doc.querySelectorAll("div.chapter-list div.row");
-					if (! list[0]) throw new Error(" can't find "+ await this.getMangaName(manga_url)+" on "+this.name);
-					else {
+					if (! list[0]) {
+						let error_message = doc.querySelector("#challenge-error-text") ? "blocked by CloudFlare" : " can't find "+ await this.getMangaName(manga_url)+" on "+this.name;
+						throw new Error(error_message);
+					} else {
 						for (let i=0; i<list.length; i++){
 							if (list.hasOwnProperty(i)){
 								let chapter = list[i].querySelector("a");
-								let date = list[i].querySelector("span[title]").title;
+								let date = list[i].querySelectorAll("span")[3];
 								let update = new Date(date) != "Invalid Date" ? new Date(date).getTime()
 									: date == "1 day ago" ? new Date().getTime() - (24 * 3600 * 1000)
 									: date == "2 day ago" ? new Date().getTime() - (48 * 3600 * 1000)
@@ -542,7 +602,23 @@ var websites_list = {
 								}
 							}
 						}
+					}*/
+
+					let source = await getSource("https://www.natomanga.com/api/manga/"+manga_url.split("/manga/")[1]+"chapters?limit=5000&offset=0");
+					let list =  JSON.parse(source)["data"]["chapters"];
+					if (! list[0]) {
+						let error_message = " can't find "+ await this.getMangaName(manga_url)+" on "+this.name;
+						throw new Error(error_message);
+					} else {
+						for (chapter in list) {
+							let chapter_href = manga_url + list[chapter]["chapter_slug"];
+							let chapter_number = list[chapter]["chapter_num"].toString();
+							let date = list[chapter]["updated_at"];
+							let update = new Date(date) != "Invalid Date" ? new Date(date).getTime() : new Date().getTime();
+							chapters_list[chapter_number] = {"status" : "unknown", "url" : chapter_href, "update" : update};
+						}
 					}
+
 					return chapters_list;
 				},
 				searchFor: async function (manga_name){
@@ -577,6 +653,7 @@ var websites_list = {
 				}
 	},
 	"manganato":{name:"manganato",
+				"unsupported":"total",
 				url:"manganato.com/manga-",
 				getMangaName: async function (url){
 					var source = "truc";
@@ -672,6 +749,7 @@ var websites_list = {
 				}
 	},
 	"chapmanganato":{name:"chapmanganato",
+				"unsupported":"total",
 				url:"chapmanganato.to/manga-",
 				getMangaName: async function (url){
 					var source = "truc";
@@ -897,14 +975,14 @@ var websites_list = {
 							throw error;
 						}
 					} else if (url.includes("/title/") && url.split("/title/")[1]) { //if on root page, manga id is in url
-						manga_id = url.split("/title/")[1];
+						manga_id = url.split("/title/")[1].split("/")[0];
 						
 					}
 					if (manga_id != ""){
 						//get manga data and extract name
 						try {
 							let manga_source = JSON.parse(await getSource("https://api.mangadex.org/manga/" + manga_id));
-							name = cleanMangaName(manga_source["data"]["attributes"]["title"]["en"]);
+							name = cleanMangaName(Object.values(manga_source["data"]["attributes"]["title"])[0]);
 						} catch (error) {
 							throw error;
 						}
@@ -915,7 +993,7 @@ var websites_list = {
 				getMangaRootURL: async function (url) {
 					let result = "";
 					//if we're on root page, make sure the domain is mangadex and not mangassubscriber
-					if (url.includes("/title/") && url.split("/title/")[1]) result = "https://" + this.url + "title/" + url.split("/title/")[1];
+					if (url.includes("/title/") && url.split("/title/")[1]) result = "https://" + this.url + "title/" + url.split("/title/")[1].split("/")[0];
 					//if we're on chapter page
 					else if (url.includes("/chapter/")){
 						try {
@@ -1301,6 +1379,11 @@ async function getSource(url, options){
 	return data;
 }
 
+// Returns a Promise that resolves after "ms" Milliseconds
+async function timer(ms){
+	return new Promise(res => setTimeout(res, ms));
+}
+
 
 
 //follow a manga
@@ -1389,7 +1472,7 @@ async function updateMangasList(mangas_selection, ignore_no_update){
 																			}
 																		}
 																	},
-																	function(error){
+																	async function(error){
 																		browser.runtime.sendMessage({"target":"popup" , "log":{"manga":manga , "from":website_name , "status":"errors" , "details":"couldn't get source : "+ error +"\n"+ error.stack}}); //warning the popup
 																	}
 					);
@@ -1462,7 +1545,6 @@ async function readMangaChapter(message, sender) {
 		setBadgeNumber();
 	}
 }
-
 
 
 
@@ -1915,69 +1997,7 @@ async function install(){
 	if (update_list) {
 		browser.browserAction.setBadgeText({"text" : "..."});
 		for (let manga in mangas_list){
-			//switching chapmanganato.com urls to mangakakalot.gg or natomanga.com urls
-			if ("chapmanganato" in mangas_list[manga].registered_websites) {
-				var source = "truc";
-				var parser = new DOMParser();
-
-				try {
-					//get manga's home page
-					source = await getSource("https://www.mangakakalot.gg/manga/" + manga.replaceAll(" ", "-") + "/");
-					//extract the chapter list
-					var doc = parser.parseFromString(source, "text/html");
-					let list = doc.querySelectorAll("div.chapter-list div.row");
-					if (list[0]) { //if it is found on mangakakalot.gg
-						mangas_list[manga].registered_websites["mangakakalot"] = "https://www.mangakakalot.gg/manga/" + manga.replaceAll(" ", "-") + "/";
-						delete mangas_list[manga].registered_websites["chapmanganato"];
-						if (mangas_list[manga].website_name == "chapmanganato") mangas_list[manga].website_name = "mangakakalot";
-					} else { //else get it from natomanga.com
-						//get manga's home page
-						source = await getSource("https://www.natomanga.com/manga/" + manga.replaceAll(" ", "-") + "/");
-						//extract the chapter list
-						var doc = parser.parseFromString(source, "text/html");
-						let list = doc.querySelectorAll("div.chapter-list div.row");
-						if (list[0]) { //if it is found on natomanga.com
-							mangas_list[manga].registered_websites["natomanga"] = "https://www.natomanga.com/manga/" + manga.replaceAll(" ", "-") + "/";
-							delete mangas_list[manga].registered_websites["chapmanganato"];
-							if (mangas_list[manga].website_name == "chapmanganato") mangas_list[manga].website_name = "natomanga";
-						} 
-					}
-				} catch (error) {
-					//fail silently
-				}
-			}
-			//switching manganato.com urls to natomanga.com or mangakakalot.gg urls 
-			if ("manganato" in mangas_list[manga].registered_websites) {
-
-				var source = "truc";
-				var parser = new DOMParser();
-
-				try {
-					//get manga's home page
-					source = await getSource("https://www.natomanga.com/manga/" + manga.replaceAll(" ", "-") + "/");
-					//extract the chapter list
-					var doc = parser.parseFromString(source, "text/html");
-					let list = doc.querySelectorAll("div.chapter-list div.row");
-					if (list[0]) { //if it is found on natomanga.com
-						mangas_list[manga].registered_websites["natomanga"] = "https://www.natomanga.com/manga/" + manga.replaceAll(" ", "-") + "/";
-						delete mangas_list[manga].registered_websites["manganato"];
-						if (mangas_list[manga].website_name == "manganato") mangas_list[manga].website_name = "natomanga";
-					} else { //else get it from mangakakalot.gg
-						//get manga's home page
-						source = await getSource("https://www.mangakakalot.gg/manga/" + manga.replaceAll(" ", "-") + "/");
-						//extract the chapter list
-						var doc = parser.parseFromString(source, "text/html");
-						let list = doc.querySelectorAll("div.chapter-list div.row");
-						if (list[0]) { //if it is found on mangakakalot.gg
-							mangas_list[manga].registered_websites["natomanga"] = "https://www.mangakakalot.gg/manga/" + manga.replaceAll(" ", "-") + "/";
-							delete mangas_list[manga].registered_websites["manganato"];
-							if (mangas_list[manga].website_name == "manganato") mangas_list[manga].website_name = "mangakakalot";
-						} 
-					}
-				} catch (error) {
-					//fail silently
-				}
-			}
+			
 		}
 		setBadgeNumber();
 	}
