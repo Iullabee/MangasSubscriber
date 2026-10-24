@@ -2,7 +2,7 @@
 
 	"manifest_version": 2,
 	"name": "MangasSubscriber",
-	"version": "2.4.5",
+	"version": "2.4.6",
 
 	"icons": {
 		"48": "icons/logo.svg"
@@ -20,14 +20,13 @@
 		"*://*.webtoons.com/*",
 		"*://mangahere.cc/*",
 		"*://*.mangahere.cc/*",
-		"*://www.mangakakalot.gg/*",
+		"*://www.kakamanga.com/*",
 		"*://www.natomanga.com/*",
 		"*://www.isekaiscan.top/*",
 		"*://mangadex.org/*",
 		"*://api.mangadex.org/*",
 		"*://*.mangago.me/*",
-		"*://manhuaplus.org/*",
-		"*://api.paste.ee/*"
+		"*://manhuaplus.org/*"
 	],
 
 	"browser_action": {
@@ -52,7 +51,7 @@
 						"*://m.mangatown.com/manga/*",
 						"*://www.webtoons.com/*/*/*",
 						"*://m.webtoons.com/*/*/*",
-						"*://www.mangakakalot.gg/*",
+						"*://www.kakamanga.com/*",
 						"*://www.natomanga.com/*",
 						"*://www.isekaiscan.top/*",
 						"*://mangadex.org/*",
